@@ -59,8 +59,15 @@ def move_group_python_interface_tutorial():
   group = moveit_commander.MoveGroupCommander("left_arm")
 
   #group.set_planner_id("RRTConnectkConfigDefault")
-  group.set_planner_id("PRMStarkConfigDefault")
+  group.set_planner_id("RRTStarkConfigDefault")
+  #group.set_planner_id("LBKPIECEkConfigDefault")
   group.set_planning_time(30)
+  group.set_num_planning_attempts(30)
+  group.set_goal_position_tolerance(0.05)
+  group.set_goal_orientation_tolerance(0.05)
+  group.allow_replanning(True)
+  group.allow_looking(True)
+  #group.set_max_velocity_scaling_factor(0.3)
   ## We create this DisplayTrajectory publisher which is used below to publish
   ## trajectories for RVIZ to visualize.
   display_trajectory_publisher = rospy.Publisher(
@@ -99,11 +106,13 @@ def move_group_python_interface_tutorial():
   print "============ Generating plan 1"
   pose_target = geometry_msgs.msg.Pose()
   current_pose = group.get_current_pose()
+  print current_pose
   #pose_target.orientation.w = 1.0
   pose_target.orientation = current_pose.pose.orientation
   pose_target.position.x = current_pose.pose.position.x - 0.1
-  pose_target.position.y = current_pose.pose.position.y 
-  pose_target.position.z = current_pose.pose.position.z 
+  pose_target.position.y = current_pose.pose.position.y - 0.1
+  pose_target.position.z = current_pose.pose.position.z - 0.1
+  #group.set_position_target(np.array([pose_target.position.x, pose_target.position.y, pose_target.position.z]))
   group.set_pose_target(pose_target)
 
 
@@ -121,14 +130,14 @@ def move_group_python_interface_tutorial():
   # ## group.plan() method does this automatically so this is not that useful
   # ## here (it just displays the same trajectory again).
   print "============ Visualizing plan1"
-  display_trajectory = moveit_msgs.msg.DisplayTrajectory()
+  # display_trajectory = moveit_msgs.msg.DisplayTrajectory()
 
-  display_trajectory.trajectory_start = robot.get_current_state()
-  display_trajectory.trajectory.append(plan1)
-  display_trajectory_publisher.publish(display_trajectory);
+  # display_trajectory.trajectory_start = robot.get_current_state()
+  # display_trajectory.trajectory.append(plan1)
+  # display_trajectory_publisher.publish(display_trajectory);
 
-  print "============ Waiting while plan1 is visualized (again)..."
-  rospy.sleep(5)
+  # print "============ Waiting while plan1 is visualized (again)..."
+  # rospy.sleep(5)
 
 
   ## Moving to a pose goal
