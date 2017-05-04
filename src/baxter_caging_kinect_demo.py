@@ -314,6 +314,28 @@ class BaxterGraspKinect():
       plan3 = group.plan()
       group.go(wait=True)
 
+      print "============ Moving while caged"
+      group.clear_pose_targets()
+      # Then, we will get the current set of joint values for the group
+      current_pose = group.get_current_pose()
+      pose_target.orientation = current_pose.pose.orientation
+      pose_target.position.x = current_pose.pose.position.x + 0.05
+      pose_target.position.y = current_pose.pose.position.y - 0.1
+      pose_target.position.z = -0.12
+      
+      #print "Pose target for holding object ",pose_target
+      
+      group.set_pose_target(pose_target)
+    # print "============ Joint values: ", group_variable_values
+
+    # ## Now, let's modify one of the joints, plan to the new joint
+    # ## space goal and visualize the plan
+    # group_variable_values[6] = 0.0
+    # group.set_joint_value_target(group_variable_values)
+
+      plan5 = group.plan()
+      group.go(wait=True)
+
     # print "============ Gripper Move Group Current JVs "  
     current_state_gripper_jts = group_gripper.get_joints()
     current_state_gripper = group_gripper.get_active_joints()
@@ -401,8 +423,9 @@ class BaxterGraspKinect():
     # pose_target.orientation.z = 0.00
     # pose_target.orientation.w = 0.00
     
-    group.set_pose_target(pose_target)
-    plan5 = group.plan()
+    #group.set_pose_target(pose_target)
+    group.set_position_target([pose_target.position.x , pose_target.position.y, pose_target.position.z])
+    plan6 = group.plan()
 
     group.go(wait=True)
 
