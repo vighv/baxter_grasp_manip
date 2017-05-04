@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <include file="/home/hriclass/catkin_ws/src/moveit_robots/baxter/baxter_moveit_config/launch/baxter_grippers.launch"/>
+
+  <node name="rsdk_position_w_id_joint_trajectory_action_server" pkg="baxter_interface" type="joint_trajectory_action_server.py" respawn="false" output="screen">
+  </node>
+
+
+    <include file="$(find freenect_launch)/launch/examples/freenect-registered-xyzrgb.launch"/>
+
+    <include file="$(find rbx1_vision)/launch/camshift.launch"/>
+    
+    <include file="$(find rbx1_vision)/launch/camshift2.launch"/>
+
+    
+
+  <!-- node name="move_group_python_interface_tutorial" pkg="baxter_grasp_manip" type="baxter_moveit_test.py" respawn="false" output="screen">
+  </node -->
+
+</launch>

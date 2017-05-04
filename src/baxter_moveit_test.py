@@ -109,9 +109,9 @@ def move_group_python_interface_tutorial():
   print current_pose
   #pose_target.orientation.w = 1.0
   pose_target.orientation = current_pose.pose.orientation
-  pose_target.position.x = current_pose.pose.position.x - 0.1
-  pose_target.position.y = current_pose.pose.position.y - 0.1
-  pose_target.position.z = current_pose.pose.position.z - 0.1
+  pose_target.position.x = current_pose.pose.position.x + 0.1
+  pose_target.position.y = current_pose.pose.position.y + 0.1
+  pose_target.position.z = current_pose.pose.position.z + 0.1
   #group.set_position_target(np.array([pose_target.position.x, pose_target.position.y, pose_target.position.z]))
   group.set_pose_target(pose_target)
 
