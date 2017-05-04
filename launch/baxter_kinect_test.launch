@@ -14,7 +14,9 @@
     
     <include file="$(find rbx1_vision)/launch/camshift2.launch"/>
 
-    
+    <include file="$(find rbx1_vision)/launch/pos_calculator.launch"/>
+
+   <remap from="joint_states" to="/robot/joint_states" />
 
   <!-- node name="move_group_python_interface_tutorial" pkg="baxter_grasp_manip" type="baxter_moveit_test.py" respawn="false" output="screen">
   </node -->

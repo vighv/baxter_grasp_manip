@@ -18,6 +18,7 @@ from trajectory_msgs.msg import (
 )
 
 import baxter_interface
+import baxter_external_devices
 
 from baxter_interface import CHECK_VERSION
 
@@ -27,6 +28,7 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 from geometry_msgs.msg import Vector3, Twist
+from pyquaternion import Quaternion
 
 #from baxter_core_msgs import EndPointState
 
@@ -59,23 +61,36 @@ class BaxterGraspKinect():
     #subscriber.unregister()
 
   def get_kinect(self):
- 
-    self.rate = rospy.Rate(10)
 
-    while not self.flag1*self.flag2:            
-      rospy.Subscriber('/pos_1', Vector3, self.end1_callback)            
-      rospy.Subscriber('/pos_2', Vector3, self.end2_callback)
+    self.rod_end1 = rospy.wait_for_message('/pos_1',Vector3)
+    self.rod_end2 = rospy.wait_for_message('/pos_2',Vector3)
+ 
+    print "============ Rod end point 1 in Kinect frame"
+    print self.rod_end1 
+
+    print "============ Rod end point 2 in Kinect frame"
+    print self.rod_end2 
+
+    self.rod_mid_point_kinect = Vector3( 0.5*(self.rod_end1.x + self.rod_end2.x) , 0.5*((self.rod_end1.y + self.rod_end2.y)) , 0.5*((self.rod_end1.z + self.rod_end2.z))  )
+    
+    print "============ Rod mid point in Kinect frame"
+    print self.rod_mid_point_kinect
+    # self.rate = rospy.Rate(10)
+
+    # while not self.flag1*self.flag2:            
+    #   rospy.Subscriber('/pos_1', Vector3, self.end1_callback)            
+    #   rospy.Subscriber('/pos_2', Vector3, self.end2_callback)
       
-      ## Check for Kinect tracking of end points of the rod
-      rospy.wait_for_message('/pos_1', Vector3)
-      rospy.wait_for_message('/pos_2', Vector3) 
-    self.rate.sleep()
+    #   ## Check for Kinect tracking of end points of the rod
+    #   rospy.wait_for_message('/pos_1', Vector3)
+    #   rospy.wait_for_message('/pos_2', Vector3) 
+    # self.rate.sleep()
   
   def transform_kinect_to_baxter(self):
 
     # Transform parameters from Baxter to Kinect
-    xb = -0.5538
-    yb = 0.0362
+    xb = -0.735
+    yb = -0.031
     zb = -1.2591
     self.vec_baxter_to_kinect = np.array([xb , yb, zb])
 
@@ -115,7 +130,9 @@ class BaxterGraspKinect():
     ## First initialize moveit_commander and rospy.
     
     self.rod_mid_point = Vector3( 0.5*(self.v1_bax[0] + self.v2_bax[0]) , 0.5*(self.v1_bax[1] + self.v2_bax[1]) , 0.5*(self.v1_bax[2] + self.v2_bax[2])  )
-
+    
+    print "============ Rod mid point in Baxter frame"
+    print self.rod_mid_point 
 
     print "============ Starting Moveit Commander"
     moveit_commander.roscpp_initialize(sys.argv)
@@ -137,9 +154,9 @@ class BaxterGraspKinect():
     #group.set_planner_id("RRTConnectkConfigDefault")
     group.set_planner_id("RRTStarkConfigDefault")
     #group.set_planner_id("LBKPIECEkConfigDefault")
-    group.set_planning_time(30)
+    group.set_planning_time(10)
     group.set_num_planning_attempts(30)
-    group.set_goal_position_tolerance(0.05)
+    group.set_goal_position_tolerance(0.01)
     group.set_goal_orientation_tolerance(0.05)
     group.allow_replanning(True)
     group.allow_looking(True)
@@ -190,7 +207,7 @@ class BaxterGraspKinect():
     # pose_target.position.z = current_pose.pose.position.z + 0.1
     pose_target.position.x = self.rod_mid_point.x
     pose_target.position.y = self.rod_mid_point.y
-    pose_target.position.z = 0.1    
+    pose_target.position.z = -0.05    
 
     #group.set_position_target(np.array([pose_target.position.x, pose_target.position.y, pose_target.position.z]))
     group.set_pose_target(pose_target)
@@ -203,21 +220,90 @@ class BaxterGraspKinect():
     plan1 = group.plan()
 
     print "============ Waiting while RVIZ displays plan1..."
-    rospy.sleep(5)
+    rospy.sleep(2)
 
    
     # ## You can ask RVIZ to visualize a plan (aka trajectory) for you.  But the
     # ## group.plan() method does this automatically so this is not that useful
     # ## here (it just displays the same trajectory again).
-    print "============ Visualizing plan1"
+    
 
     print "============ Going to goal pose on real robot..."
     group.go(wait=True)
-
-
+    
     ## When finished shut down moveit_commander.
+    
+
+
+    print "============ Grasping Maneuvers: Rotating gripper to align with rod"
+    
+        # Planning to a joint-space goal 
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    #
+    # Let's set a joint space goal and move towards it. 
+    # First, we will clear the pose target we had just set.
+
+    group.clear_pose_targets()
+
+    # Then, we will get the current set of joint values for the group
+    current_pose = group.get_current_pose()
+    pose_target.position = current_pose.pose.position
+
+    rot_angle = np.arctan2(self.rod_end2_baxter.y - self.rod_end1_baxter.y , self.rod_end2_baxter.x - self.rod_end1_baxter.x)
+
+    rot_quaternion = Quaternion(axis=[1, 0, 0] , angle=rot_angle)
+    print "Rotation Quaternion ", rot_quaternion
+    quat_vec = rot_quaternion.elements
+
+    pose_target.orientation.x = quat_vec[0]
+    pose_target.orientation.y = quat_vec[1]
+    pose_target.orientation.z = quat_vec[2]
+    pose_target.orientation.w = quat_vec[3]
+    
+    print "Pose target ",pose_target
+    
+    group.set_pose_target(pose_target)
+    # print "============ Joint values: ", group_variable_values
+
+    # ## Now, let's modify one of the joints, plan to the new joint
+    # ## space goal and visualize the plan
+    # group_variable_values[6] = 0.0
+    # group.set_joint_value_target(group_variable_values)
+
+
+
+    plan2 = group.plan()
+
+    print "============ Waiting while RVIZ displays plan2..."
+    rospy.sleep(2)
+    group.go(wait=True)
+
+    
+    ## Now to perform grasping:
+    # done = False
+
+    # left = baxter_interface.Limb('left')
+    
+    # lj = left.joint_names()
+    # print lj
+    # curr_l_w2 = left.joint_angle(lj[6])
+    # print curr_l_w2
+    # command_l_w2 = {lj[6] : 0.0}
+
+    #left.set_joint_positions(command_l_w2)
+    # left.move_to_joint_positions(command_l_w2)
+    #grip_left.close()
+    
+
     moveit_commander.roscpp_shutdown()
 
+    grip_left = baxter_interface.Gripper('left')
+    rospy.sleep(3)
+    grip_left.close()
+
+    rospy.sleep(3)
+
+    grip_left.open()
     ## END_TUTORIAL
 
     print "============ STOPPING"
