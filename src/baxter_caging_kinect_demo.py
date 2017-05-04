@@ -90,7 +90,7 @@ class BaxterGraspKinect():
 
     # Transform parameters from Baxter to Kinect
     xb = -0.735
-    yb = -0.032
+    yb = -0.028
     zb = -1.2591
     self.vec_baxter_to_kinect = np.array([xb , yb, zb])
 
@@ -319,8 +319,8 @@ class BaxterGraspKinect():
       # Then, we will get the current set of joint values for the group
       current_pose = group.get_current_pose()
       pose_target.orientation = current_pose.pose.orientation
-      pose_target.position.x = current_pose.pose.position.x + 0.05
-      pose_target.position.y = current_pose.pose.position.y - 0.1
+      pose_target.position.x = current_pose.pose.position.x #+ 0.03
+      pose_target.position.y = current_pose.pose.position.y - 0.03
       pose_target.position.z = -0.12
       
       #print "Pose target for holding object ",pose_target
@@ -341,14 +341,15 @@ class BaxterGraspKinect():
     current_state_gripper = group_gripper.get_active_joints()
     print current_state_gripper
 
+    print "============ Gripping"
     rs = baxter_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
     gripper_left = baxter_interface.Gripper('left', CHECK_VERSION)
-    rospy.sleep(3)
+    
     gripper_left.close()
+    rospy.sleep(3)
 
-
-    grip_flag = raw_input('Enter any key after running gripper subroutine: ')
+    # grip_flag = raw_input('Enter any key after running gripper subroutine: ')
     #moveit_commander.roscpp_shutdown()
 
     # grip_left = baxter_interface.Gripper('left')
@@ -411,11 +412,11 @@ class BaxterGraspKinect():
     print "============ Moving to Goal"
     
     group.clear_pose_targets()
-
+    group.set_planning_time(10)
     # Then, we will get the current set of joint values for the group
     current_pose = group.get_current_pose()
     pose_target.position.x = 0.744
-    pose_target.position.y = -0.084
+    pose_target.position.y = -0.09
     pose_target.position.z = 0.04
     pose_target.orientation = current_pose.pose.orientation
     # pose_target.orientation.x = 1.00
@@ -423,17 +424,19 @@ class BaxterGraspKinect():
     # pose_target.orientation.z = 0.00
     # pose_target.orientation.w = 0.00
     
-    #group.set_pose_target(pose_target)
-    group.set_position_target([pose_target.position.x , pose_target.position.y, pose_target.position.z])
+    group.set_pose_target(pose_target)    
+    #group.set_position_target([pose_target.position.x , pose_target.position.y, pose_target.position.z])
     plan6 = group.plan()
 
     group.go(wait=True)
 
     moveit_commander.roscpp_shutdown()
-
-    grip_left = baxter_interface.Gripper('left')
-    grip_left.open()
+    
     rospy.sleep(2)
+    gripper_left.open()
+    # grip_left = baxter_interface.Gripper('left')
+    # grip_left.open()
+    
     # grip_left.close()
     print "============ STOPPING"
 
